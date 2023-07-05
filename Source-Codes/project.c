@@ -21,7 +21,7 @@ int main() {
     for (int i = 0; i < n_classes; i++) {
         sprintf(path, "./CLASSES/%s", classes[i]);
         sprintf(outpath, "./OUTPUT/%s", classes[i]);
-        //mkdir(outpath, 0777);
+        //mkdir(outpath, 0777);   //Cria pastas
 
         if ((dir = opendir(path)) != NULL) {
             while ((ent = readdir(dir)) != NULL) {
@@ -30,34 +30,31 @@ int main() {
                     sprintf(filepath, "%s/%s", path, ent->d_name);
                     base = strtok(ent->d_name, ".");
                     sprintf(outpath, "./OUTPUT/%s/%s", classes[i], base);
-                    //mkdir(outpath, 0777);
+                    //mkdir(outpath, 0777);   //Cria pastas
 
-                    // Quero calcular apenas no diretório P1
-                    if (strcmp(classes[i], "G2") == 0)
-                    {
-                        printf("Calculating for: %s\n", filepath);
-                        // CÁLCULO DAS HEURÍSTICAS
-                        pack = ReadProblem(filepath);
-                        Sol = MOT(pack);
-                        sprintf(outpathfile, "%s/%s-MOT.txt", outpath, base);
-                        ExportSolution(outpathfile, pack, Sol);
-                        RemoveSolution(Sol);
 
-                        Sol = MOP(pack);
-                        sprintf(outpathfile, "%s/%s-MOP.txt", outpath, base);
-                        ExportSolution(outpathfile, pack, Sol);
-                        RemoveSolution(Sol);
+                    printf("Calculating for: %s\n", filepath);
+                    // CÁLCULO DAS HEURÍSTICAS
+                    pack = ReadProblem(filepath);
+                    Sol = MOT(pack);
+                    sprintf(outpathfile, "%s/%s-MOT.txt", outpath, base);
+                    ExportSolution(outpathfile, pack, Sol);
+                    RemoveSolution(Sol);
 
-                        Sol = MOPT(pack);
-                        sprintf(outpathfile, "%s/%s-MOPT.txt", outpath, base);
-                        ExportSolution(outpathfile, pack, Sol);
-                        RemoveSolution(Sol);
+                    Sol = MOP(pack);
+                    sprintf(outpathfile, "%s/%s-MOP.txt", outpath, base);
+                    ExportSolution(outpathfile, pack, Sol);
+                    RemoveSolution(Sol);
 
-                        sprintf(outpathfile, "%s/%s-BB.txt", outpath, base);
-                        Sol = BranchAndBound(pack, outpath, base);
-                        ExportSolution(outpathfile, pack, Sol);
-                        RemoveSolution(Sol);
-                    }
+                    Sol = MOPT(pack);
+                    sprintf(outpathfile, "%s/%s-MOPT.txt", outpath, base);
+                    ExportSolution(outpathfile, pack, Sol);
+                    RemoveSolution(Sol);
+
+                    sprintf(outpathfile, "%s/%s-BB.txt", outpath, base);
+                    Sol = BranchAndBound(pack, outpath, base);
+                    ExportSolution(outpathfile, pack, Sol);
+                    RemoveSolution(Sol);
                 }
             }
             closedir(dir);

@@ -296,23 +296,6 @@ int AccumulatedPriorities (Branch branch, int VARS_AMOUNT)
     return accumulated_priorities;
 }
 
-void writeBranchQty(Branch branch, int VARS_AMOUNT, FILE * logFile)
-{
-    BranchImpl b = (BranchImpl) branch;
-    for (int i = 0; i < VARS_AMOUNT; i++)
-        fprintf(logFile, "%3d ", b[i].quantity);
-    fprintf(logFile, " - f = %d\n", AccumulatedPriorities(b, VARS_AMOUNT));
-}
-
-void writeDownLevel(Branch branch, int VARS_AMOUNT, int k, FILE * logFile)
-{
-    BranchImpl b = (BranchImpl) branch;
-    for (int i = 0; i <= k; i++)
-        fprintf(logFile, "%3d ", b[i].quantity);
-    for (int i = k + 1; i < VARS_AMOUNT; i++)
-        fprintf(logFile, "%3c ", '?');
-    fprintf(logFile, "\n");
-}
 
 int findNonZeroItem(Branch branch, int VARS_AMOUNT)
 {
@@ -380,35 +363,7 @@ int CalculateBound(Branch branch, double c, int k)
     return L;
 }
 
-int writeGraphBranch(FILE * dotFile, Branch branch, int * rowsEachLevelK, int initialK, int finalK)
-{
-    BranchImpl b = (BranchImpl) branch;
-    char style[7] = "dotted";
-    if (initialK != finalK)
-        style[0] = '\0';
-    
-    for (int k = initialK; k <= finalK; k++)
-    {
-        rowsEachLevelK[k]++;
-        fprintf(dotFile, "\t%d.%d [label=\"%d\" style=\"%s\"]\n", k, rowsEachLevelK[k], b[k].quantity, style);
-    }
 
-    if (initialK == 0)
-        fprintf(dotFile, "\troot -- %d.%d\n", initialK, rowsEachLevelK[initialK]);
-    else
-    {
-        // Ligar o pai ao ramo
-        fprintf(dotFile, "\t%d.%d -- %d.%d\n", initialK-1, rowsEachLevelK[initialK-1], initialK, rowsEachLevelK[initialK]);
-    }
-
-    for (int k = initialK; k < finalK; k++)
-    {
-        fprintf(dotFile, "\t%d.%d -- %d.%d\n", k, rowsEachLevelK[k], k+1, rowsEachLevelK[k+1]);
-    }
-
-    fprintf(dotFile, "\n");
-    return 0;
-}
 
 Solution BranchAndBound (Problem data, char * output_log_dir, char * problem_name)
 {
@@ -434,21 +389,6 @@ Solution BranchAndBound (Problem data, char * output_log_dir, char * problem_nam
     VARS_TOTAL = pack->variables;
     capacity = pack->capacity;
 
-
-    // Escrever cabeçalho básico do grafo
-    // dotname = malloc(sizeof(char) * (strlen(output_log_dir) + 1 + strlen(problem_name) + strlen("-BB-Graph.dot") + 1));
-    // logname = malloc(sizeof(char) * (strlen(output_log_dir) + 1 + strlen(problem_name) + strlen("-BB-Log.dot"  ) + 1));
-    // sprintf(dotname, "%s/%s-BB-Graph.dot", output_log_dir, problem_name);
-    // sprintf(logname, "%s/%s-BB-Log.txt", output_log_dir, problem_name);
-    // FILE * dotFile = fopen(dotname, "w");
-    // FILE * logFile = fopen(logname, "w");
-    // fprintf(dotFile, "graph G {\n");
-    // fprintf(dotFile, "\trankdir=\"LR\"\n");
-    // fprintf(dotFile, "\tnode [shape=circle]\n");
-    // fprintf(dotFile, "\troot [label=\"root\" rankdir=\"LR\"]\n");
-    // *
-    // *
-    // *
     BranchImpl current  = allocateBranch(VARS_TOTAL);
     BranchImpl SolBranch = allocateBranch(VARS_TOTAL);
 
@@ -467,36 +407,21 @@ Solution BranchAndBound (Problem data, char * output_log_dir, char * problem_nam
     MaximizeBranch(current, capacity, VARS_TOTAL, k);
     copyBranch(SolBranch, current, VARS_TOTAL);
     greater = AccumulatedPriorities(current, VARS_TOTAL);
-    //fprintf(logFile, "Greater: %.2d\n", greater);
-    // writeBranchQty(current, VARS_TOTAL, logFile);
 
-    // printf("[0] = %d | [1] = %d | k = %d\n", current[0].quantity, current[1].quantity, k);
-
-    //writeGraphBranch(dotFile, current, rowsEachLevelK, 0, VARS_TOTAL - 1);
-    //fprintf(logFile, ">> descendo nivel <<\n");
     k = DownLevel(current, VARS_TOTAL);
-    // writeDownLevel(current, VARS_TOTAL, k, logFile);
-    //int unknown = 1;
-    // printf("[0] = %d | [1] = %d | k = %d\n", current[0].quantity, current[1].quantity, k);
+
     while (current[0].quantity >= 0)
     {
         /* CALCULAR LIMITANTE
             - Se o limitante for estritamente MAIOR: continue as ramificações;
             - Senão: Desça mais um nível
         */
-        // printf("non-0 = %d\n", findNonZeroItem(current, VARS_TOTAL));
         if (current[k].quantity >= 0 && k < VARS_TOTAL - 1)
         {
-            //fprintf(logFile, "> calculando limitante em k = [%d] <\n", k);
             Bound = CalculateBound(current, capacity, k);
-            //fprintf(logFile, "<limitante: %d>\n", Bound);
             if (Bound > greater)
             {
-                //fprintf(logFile, ">>> limitante [%d] > solucao [%d] <<\n", Bound, greater);
-                //fprintf(logFile, "::: calculando ramo :::\n");
                 f = MaximizeBranch(current, capacity, VARS_TOTAL, k + 1);
-                // writeBranchQty(current, VARS_TOTAL, logFile);
-                //unknown = 1;
 
                 if (f > greater)
                 {
@@ -505,21 +430,8 @@ Solution BranchAndBound (Problem data, char * output_log_dir, char * problem_nam
                 }
             }
         }
-        //writeGraphBranch(dotFile, current, rowsEachLevelK, k, VARS_TOTAL - unknown);
-        //fprintf(logFile, ">> descendo nivel <<\n");
-        
-        // printf("[0] = %d | [1] = %d | k = %d\n", current[0].quantity, current[1].quantity, k);
         k = DownLevel(current, VARS_TOTAL);
-        // writeDownLevel(current, VARS_TOTAL, k, logFile);
-        //unknown = VARS_TOTAL - k;
     }
-    //fprintf(logFile, ">>> FIM DAS RAMIFICAOES <<<\n\n");
-    //fprintf(logFile, "SOLUCAO:\n");
-    // writeBranchQty(SolBranch, VARS_TOTAL, logFile);
-
-    // fprintf(dotFile, "}");
-    // fclose(dotFile);
-    // fclose(logFile);
 
     int occupied_space = 0;
     int acc_priority   = 0;
@@ -539,18 +451,3 @@ Solution BranchAndBound (Problem data, char * output_log_dir, char * problem_nam
     sol->execution_time       = elapsed;
     return (Solution) sol;
 }
-
-
-// void main()
-// {
-//     Problem pack = ReadProblem("/mnt/c/Users/Gabriel/OneDrive/Codes/#Repositories/Mochila/CLASSES/G2/problem-G2-006.txt");
-//     Solution Sol = MOPT(pack);
-//     //sprintf(outpathfile, "%s/%s-MOP.txt", outpath, base);
-//     ExportSolution("MOPT-Sol.txt", pack, Sol);
-//     RemoveSolution(Sol);
-
-//     Sol = BranchAndBound(pack, ".", "G2-006");
-//     //sprintf(outpathfile, "%s/%s-BB.txt", outpath, base);
-//     ExportSolution("BB-Sol.txt", pack, Sol);
-//     RemoveSolution(Sol);
-// }
